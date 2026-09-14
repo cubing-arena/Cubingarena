@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Cubing Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d12; --bg-soft:#0f131a; --surface:#141922; --surface-2:#1a212c; --line:#26303d;
+    --text:#eef1f5; --text-dim:#9aa7b6; --orange:#ff7a1a; --orange-deep:#e2610a;
+    --white:#f5f6f4; --green:#0fa958; --blue:#2c6fd1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,h4,h5{ font-family:'Rajdhani', sans-serif; font-weight:700; letter-spacing:0.01em; }
+  a{ color:inherit; }
+  button{ font-family:inherit; cursor:pointer; }
+  img{ max-width:100%; display:block; }
+  .flag-bar{ height:4px; width:100%; background:linear-gradient(90deg, var(--orange) 0 25%, var(--white) 25% 50%, var(--green) 50% 75%, var(--blue) 75% 100%); }
+  .top{ display:flex; align-items:center; justify-content:space-between; padding:18px 28px; border-bottom:1px solid var(--line); }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{ height:38px; width:38px; border-radius:8px; background:linear-gradient(135deg, var(--orange), var(--orange-deep)); display:flex; align-items:center; justify-content:center; font-family:'Rajdhani'; font-weight:700; color:#1a0e04; flex-shrink:0; }
+  .brand b{ font-family:'Rajdhani'; font-size:1.15rem; }
+  .brand b span{ color:var(--orange); }
+  .back-link{ font-size:0.85rem; color:var(--text-dim); }
+  .back-link:hover{ color:var(--text); }
+  .wrap{ max-width:920px; margin:0 auto; padding:44px 24px 100px; }
+
+  .lock-screen{ text-align:center; padding:80px 20px; max-width:420px; margin:0 auto; }
+  .lock-screen h2{ font-size:1.6rem; margin-bottom:8px; }
+  .lock-screen p{ color:var(--text-dim); margin-bottom:20px; }
+  input[type=text], input[type=date], input[type=url], input[type=password], input[type=file], textarea{
+    background:var(--surface-2); border:1px solid var(--line); color:var(--text);
+    padding:10px 12px; font-family:inherit; font-size:0.92rem; border-radius:6px; width:100%;
+  }
+  input:focus, textarea:focus{ outline:none; border-color:var(--orange); }
+  textarea{ resize:vertical; min-height:64px; }
+  .lock-screen input{ margin-bottom:14px; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:11px 22px; font-weight:600; font-size:0.92rem;
+    border:1px solid transparent; transition:transform .15s, background .15s; border-radius:8px;
+  }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:var(--orange); color:#1a0e04; }
+  .btn-primary:hover{ background:var(--orange-deep); }
+
+  .admin-tabs{ display:flex; gap:10px; margin-bottom:30px; flex-wrap:wrap; }
+  .admin-tab{ padding:9px 18px; background:var(--surface); border:1px solid var(--line); border-radius:8px; font-weight:600; font-size:0.88rem; color:var(--text-dim); }
+  .admin-tab.active{ color:var(--orange); border-color:var(--orange); }
+  .admin-section{ display:none; }
+  .admin-section.active{ display:block; }
+
+  .card-block{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:24px; margin-bottom:24px; }
+  .card-block h4{ margin-bottom:16px; color:var(--text-dim); font-weight:600; font-size:0.9rem; }
+
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+  .form-grid label{ display:flex; flex-direction:column; gap:6px; font-size:0.85rem; color:var(--text-dim); }
+  .form-grid label.full{ grid-column:1/-1; }
+  .preview-img{ margin-top:8px; max-height:120px; border-radius:6px; display:none; }
+
+  .admin-list-item{
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px 18px; margin-bottom:12px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
+  }
+  .admin-list-item .info b{ display:block; margin-bottom:4px; }
+  .admin-list-item .info span{ color:var(--text-dim); font-size:0.85rem; }
+  .admin-list-item .thumb{ width:50px; height:50px; object-fit:cover; border-radius:6px; margin-right:12px; flex-shrink:0; }
+  .row-inline{ display:flex; align-items:flex-start; }
+  .row-btns{ display:flex; gap:8px; }
+  .btn-sm{ padding:7px 14px; font-size:0.82rem; border-radius:6px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); }
+  .btn-sm.danger{ color:#ff5c5c; border-color:rgba(255,92,92,0.4); }
+  .btn-sm.danger:hover{ background:rgba(255,92,92,0.1); }
+  .btn-sm:hover{ border-color:var(--orange); }
+
+  .event-input-row{ display:flex; gap:8px; margin-bottom:8px; }
+  .event-input-row input{ flex:1; }
+  .sub-block{ border:1px solid var(--line); border-radius:8px; padding:16px; margin-top:14px; background:var(--bg-soft); }
+  .sub-block h5{ margin-bottom:10px; color:var(--blue); font-size:1rem; }
+  .winner-row{ display:grid; grid-template-columns:70px 1.5fr 1fr auto; gap:8px; margin-bottom:8px; align-items:center; }
+  .add-link{ font-size:0.85rem; color:var(--orange); font-weight:600; display:inline-block; margin-top:6px; }
+
+  .msg-banner{ padding:10px 14px; border-radius:6px; font-size:0.85rem; margin-bottom:16px; display:none; background:rgba(15,169,88,0.15); color:var(--green); border:1px solid rgba(15,169,88,0.3); }
+  .msg-banner.show{ display:block; }
+  .err-text{ color:#ff5c5c; font-size:0.85rem; margin-top:10px; display:none; }
+  .note{ background:rgba(44,111,209,0.1); border:1px solid rgba(44,111,209,0.3); color:var(--text-dim); padding:12px 16px; border-radius:8px; font-size:0.85rem; margin-bottom:24px; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA77xaO3Sndi_HgIGoYzTEUf4hVwbYpQkM",
+    authDomain: "cubingarena-cf2d8.firebaseapp.com",
+    projectId: "cubingarena-cf2d8",
+    storageBucket: "cubingarena-cf2d8.firebasestorage.app",
+    messagingSenderId: "604555649505",
+    appId: "1:604555649505:web:37a241456da47d7b5db2a0"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
+</head>
+<body>
+
+<div class="flag-bar"></div>
+<div class="top">
+  <div class="brand">
+    <div class="brand-mark">CA</div>
+    <b>CUBING<span> ARENA</span> — Admin</b>
+  </div>
+  <a href="index.html" class="back-link">&larr; Back to site</a>
+</div>
+
+<div class="wrap">
+  <div id="lockScreen" class="lock-screen">
+    <h2>Admin access</h2>
+    <p>Enter the admin passcode to manage the site.</p>
+    <input type="password" id="passInput" placeholder="Passcode">
+    <button class="btn btn-primary" id="unlockBtn" style="width:100%; justify-content:center;">Unlock</button>
+    <p class="err-text" id="lockError">Incorrect passcode.</p>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <div class="note">Changes made here save directly to the live database — they'll show up on the public site automatically, for everyone, within a moment.</div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="upcomingAdmin">Upcoming Comps</button>
+      <button class="admin-tab" data-tab="pastAdmin">Past Results</button>
+      <button class="admin-tab" data-tab="competitorsAdmin">Competitors</button>
+    </div>
+
+    <div id="upcomingAdmin" class="admin-section active">
+      <div class="msg-banner" id="upcomingMsg">Saved.</div>
+      <div class="card-block">
+        <h4>Add a new upcoming competition</h4>
+        <div class="form-grid">
+          <label class="full">Competition name<input type="text" id="uc_name" placeholder="e.g. Cubing Arena Online Open 2026"></label>
+          <label>Date / dates<input type="text" id="uc_date" placeholder="e.g. 12–13 Oct 2026"></label>
+          <label>Registration link<input type="url" id="uc_reg" placeholder="https://..."></label>
+          <label class="full">Events (comma separated)<input type="text" id="uc_events" placeholder="3x3, 2x2, Pyraminx, Skewb"></label>
+          <label class="full">Sponsors (comma separated, optional)<input type="text" id="uc_sponsors" placeholder="Sponsor A, Sponsor B"></label>
+          <label class="full">Poster image (upload)
+            <input type="file" id="uc_poster_file" accept="image/*">
+            <img id="uc_poster_preview" class="preview-img">
+          </label>
+        </div>
+        <button class="btn btn-primary" id="uc_addBtn">Add competition</button>
+      </div>
+      <h4 style="margin-bottom:14px; color:var(--text-dim); font-weight:600; font-size:0.9rem;">Current upcoming competitions</h4>
+      <div id="uc_list"></div>
+    </div>
+
+    <div id="pastAdmin" class="admin-section">
+      <div class="msg-banner" id="pastMsg">Saved.</div>
+      <div class="card-block">
+        <h4>Add a past competition</h4>
+        <div class="form-grid">
+          <label class="full">Competition name<input type="text" id="pc_name" placeholder="e.g. Cubing Arena Monsoon Cup 2026"></label>
+          <label>Date / dates<input type="text" id="pc_date" placeholder="e.g. 3 Aug 2026"></label>
+          <label class="full">Poster image (upload)
+            <input type="file" id="pc_poster_file" accept="image/*">
+            <img id="pc_poster_preview" class="preview-img">
+          </label>
+        </div>
+        <div id="pc_eventsWrap">
+          <h5 style="color:var(--blue); margin-bottom:8px;">Events & winners</h5>
+          <div id="pc_eventsList"></div>
+          <a class="add-link" id="pc_addEventBtn">+ Add event</a>
+        </div>
+        <div style="margin-top:18px;"><button class="btn btn-primary" id="pc_addBtn">Add past competition</button></div>
+      </div>
+      <h4 style="margin-bottom:14px; color:var(--text-dim); font-weight:600; font-size:0.9rem;">Existing past competitions</h4>
+      <div id="pc_list"></div>
+    </div>
+
+    <div id="competitorsAdmin" class="admin-section">
+      <div class="msg-banner" id="competitorsMsg">Saved.</div>
+      <div class="card-block">
+        <h4>Add a competitor</h4>
+        <div class="form-grid">
+          <label>Name<input type="text" id="cp_name" placeholder="Competitor name"></label>
+          <label>Competitor ID<input type="text" id="cp_cid" placeholder="e.g. 2025GIRI02"></label>
+        </div>
+        <button class="btn btn-primary" id="cp_addBtn">Add competitor</button>
+      </div>
+      <h4 style="margin-bottom:14px; color:var(--text-dim); font-weight:600; font-size:0.9rem;">All competitors</h4>
+      <div id="cp_list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSCODE = "2024";
+
+/* ---------- storage helpers ---------- */
+/* ---------- state ---------- */
+let upcomingComps = [];
+let pastComps = [];
+let competitors = [];
+
+function uid(){ return 'id-' + Math.random().toString(36).slice(2, 10); }
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+const dataDocRef = db.collection('cubingarena').doc('data');
+
+async function loadData(){
+  try{
+    const doc = await dataDocRef.get();
+    if(doc.exists){
+      const json = doc.data();
+      upcomingComps = json.upcoming || [];
+      pastComps = json.past || [];
+      competitors = json.competitors || [];
+    }
+  }catch(e){
+    console.warn('Could not load data from Firebase', e);
+  }
+  renderAdminUpcoming();
+  renderAdminPast();
+  renderAdminCompetitors();
+}
+
+/* Saves straight to Firestore, live — the public site updates automatically. */
+async function saveUpcoming(){ await dataDocRef.set({ upcoming: upcomingComps }, { merge: true }); }
+async function savePast(){ await dataDocRef.set({ past: pastComps }, { merge: true }); }
+async function saveCompetitors(){ await dataDocRef.set({ competitors: competitors }, { merge: true }); }
+
+function flashMsg(id){
+  const el = document.getElementById(id);
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---------- lock screen ---------- */
+document.getElementById('unlockBtn').addEventListener('click', unlockAdmin);
+document.getElementById('passInput').addEventListener('keydown', e => { if(e.key === 'Enter') unlockAdmin(); });
+function unlockAdmin(){
+  const val = document.getElementById('passInput').value.trim();
+  if(val === ADMIN_PASSCODE){
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('lockError').style.display = 'block';
+  }
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.admin-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- upcoming ---------- */
+let uc_posterData = '';
+document.getElementById('uc_poster_file').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    uc_posterData = ev.target.result;
+    const prev = document.getElementById('uc_poster_preview');
+    prev.src = uc_posterData; prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+function renderAdminUpcoming(){
+  const wrap = document.getElementById('uc_list');
+  if(upcomingComps.length === 0){
+    wrap.innerHTML = '<p style="color:var(--text-dim); font-size:0.9rem;">No upcoming competitions added yet.</p>';
+    return;
+  }
+  wrap.innerHTML = upcomingComps.map(c => `
+    <div class="admin-list-item">
+      <div class="row-inline">
+        ${c.poster ? `<img class="thumb" src="${c.poster}">` : ''}
+        <div class="info"><b>${escapeHtml(c.name)}</b><span>${escapeHtml(c.date)} &middot; ${(c.events||[]).join(', ') || 'no events listed'}</span></div>
+      </div>
+      <div class="row-btns"><button class="btn-sm danger" data-id="${c.id}" data-action="delete-upcoming">Remove</button></div>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('[data-action="delete-upcoming"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      upcomingComps = upcomingComps.filter(c => c.id !== btn.dataset.id);
+      await saveUpcoming();
+      renderAdminUpcoming();
+      flashMsg('upcomingMsg');
+    });
+  });
+}
+
+document.getElementById('uc_addBtn').addEventListener('click', async () => {
+  const name = document.getElementById('uc_name').value.trim();
+  if(!name){ alert('Please enter a competition name.'); return; }
+  const date = document.getElementById('uc_date').value.trim() || 'Date to be announced';
+  const reg = document.getElementById('uc_reg').value.trim();
+  const events = document.getElementById('uc_events').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const sponsors = document.getElementById('uc_sponsors').value.split(',').map(s=>s.trim()).filter(Boolean);
+  upcomingComps.unshift({ id: uid(), name, date, reg, events, sponsors, poster: uc_posterData });
+  await saveUpcoming();
+  ['uc_name','uc_date','uc_reg','uc_events','uc_sponsors'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('uc_poster_file').value = '';
+  document.getElementById('uc_poster_preview').style.display = 'none';
+  uc_posterData = '';
+  renderAdminUpcoming();
+  flashMsg('upcomingMsg');
+});
+
+/* ---------- past ---------- */
+let pc_posterData = '';
+document.getElementById('pc_poster_file').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    pc_posterData = ev.target.result;
+    const prev = document.getElementById('pc_poster_preview');
+    prev.src = pc_posterData; prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+let pcEventDraft = [];
+function renderPcEventDraft(){
+  const wrap = document.getElementById('pc_eventsList');
+  if(pcEventDraft.length === 0){
+    wrap.innerHTML = '<p style="color:var(--text-dim); font-size:0.85rem;">No events added yet — add one below.</p>';
+    return;
+  }
+  wrap.innerHTML = pcEventDraft.map((ev, i) => `
+    <div class="sub-block">
+      <h5>${escapeHtml(ev.name) || 'Untitled event'}</h5>
+      <div class="event-input-row">
+        <input type="text" placeholder="Event name (e.g. 3x3)" value="${escapeAttr(ev.name)}" data-i="${i}" class="pc_ev_name">
+        <button class="btn-sm danger" data-i="${i}" data-action="del-event">Remove event</button>
+      </div>
+      ${ev.winners.map((w, j) => `
+        <div class="winner-row">
+          <input type="text" placeholder="Place" value="${escapeAttr(w.place)}" data-i="${i}" data-j="${j}" class="pc_w_place">
+          <input type="text" placeholder="Name" value="${escapeAttr(w.name)}" data-i="${i}" data-j="${j}" class="pc_w_name">
+          <input type="text" placeholder="Result (e.g. 8.42s)" value="${escapeAttr(w.result)}" data-i="${i}" data-j="${j}" class="pc_w_result">
+          <button class="btn-sm danger" data-i="${i}" data-j="${j}" data-action="del-winner">&times;</button>
+        </div>
+      `).join('')}
+      <a class="add-link" data-i="${i}" data-action="add-winner">+ Add winner</a>
+    </div>
+  `).join('');
+
+  wrap.querySelectorAll('.pc_ev_name').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].name = e.target.value; }));
+  wrap.querySelectorAll('.pc_w_place').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].winners[e.target.dataset.j].place = e.target.value; }));
+  wrap.querySelectorAll('.pc_w_name').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].winners[e.target.dataset.j].name = e.target.value; }));
+  wrap.querySelectorAll('.pc_w_result').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].winners[e.target.dataset.j].result = e.target.value; }));
+  wrap.querySelectorAll('[data-action="del-event"]').forEach(btn => btn.addEventListener('click', () => { pcEventDraft.splice(btn.dataset.i, 1); renderPcEventDraft(); }));
+  wrap.querySelectorAll('[data-action="add-winner"]').forEach(btn => btn.addEventListener('click', () => {
+    pcEventDraft[btn.dataset.i].winners.push({place:String(pcEventDraft[btn.dataset.i].winners.length+1), name:'', result:''});
+    renderPcEventDraft();
+  }));
+  wrap.querySelectorAll('[data-action="del-winner"]').forEach(btn => btn.addEventListener('click', () => { pcEventDraft[btn.dataset.i].winners.splice(btn.dataset.j, 1); renderPcEventDraft(); }));
+}
+document.getElementById('pc_addEventBtn').addEventListener('click', () => {
+  pcEventDraft.push({ name:'', winners:[{place:'1',name:'',result:''}] });
+  renderPcEventDraft();
+});
+renderPcEventDraft();
+
+document.getElementById('pc_addBtn').addEventListener('click', async () => {
+  const name = document.getElementById('pc_name').value.trim();
+  if(!name){ alert('Please enter a competition name.'); return; }
+  const date = document.getElementById('pc_date').value.trim() || 'Date not specified';
+  const events = pcEventDraft
+    .filter(ev => ev.name.trim())
+    .map(ev => ({ name: ev.name.trim(), winners: ev.winners.filter(w => w.name.trim()).map(w => ({place:w.place||'?', name:w.name.trim(), result:w.result.trim()})) }));
+  pastComps.unshift({ id: uid(), name, date, events, poster: pc_posterData });
+  await savePast();
+  document.getElementById('pc_name').value = '';
+  document.getElementById('pc_date').value = '';
+  document.getElementById('pc_poster_file').value = '';
+  document.getElementById('pc_poster_preview').style.display = 'none';
+  pc_posterData = '';
+  pcEventDraft = [];
+  renderPcEventDraft();
+  renderAdminPast();
+  flashMsg('pastMsg');
+});
+
+function renderAdminPast(){
+  const wrap = document.getElementById('pc_list');
+  if(pastComps.length === 0){
+    wrap.innerHTML = '<p style="color:var(--text-dim); font-size:0.9rem;">No past competitions added yet.</p>';
+    return;
+  }
+  wrap.innerHTML = pastComps.map(c => `
+    <div class="admin-list-item">
+      <div class="row-inline">
+        ${c.poster ? `<img class="thumb" src="${c.poster}">` : ''}
+        <div class="info"><b>${escapeHtml(c.name)}</b><span>${escapeHtml(c.date)} &middot; ${(c.events||[]).length} event${(c.events||[]).length===1?'':'s'} logged</span></div>
+      </div>
+      <div class="row-btns"><button class="btn-sm danger" data-id="${c.id}" data-action="delete-past">Remove</button></div>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('[data-action="delete-past"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      pastComps = pastComps.filter(c => c.id !== btn.dataset.id);
+      await savePast();
+      renderAdminPast();
+      flashMsg('pastMsg');
+    });
+  });
+}
+
+/* ---------- competitors ---------- */
+function renderAdminCompetitors(){
+  const wrap = document.getElementById('cp_list');
+  if(competitors.length === 0){
+    wrap.innerHTML = '<p style="color:var(--text-dim); font-size:0.9rem;">No competitors added yet.</p>';
+    return;
+  }
+  wrap.innerHTML = competitors.map(p => `
+    <div class="admin-list-item">
+      <div class="info"><b>${escapeHtml(p.name)}</b><span>ID: ${escapeHtml(p.cid)}</span></div>
+      <div class="row-btns"><button class="btn-sm danger" data-id="${p.id}" data-action="delete-competitor">Remove</button></div>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('[data-action="delete-competitor"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      competitors = competitors.filter(p => p.id !== btn.dataset.id);
+      await saveCompetitors();
+      renderAdminCompetitors();
+      flashMsg('competitorsMsg');
+    });
+  });
+}
+
+document.getElementById('cp_addBtn').addEventListener('click', async () => {
+  const name = document.getElementById('cp_name').value.trim();
+  const cid = document.getElementById('cp_cid').value.trim();
+  if(!name || !cid){ alert('Please enter both name and competitor ID.'); return; }
+  competitors.unshift({ id: uid(), name, cid });
+  await saveCompetitors();
+  document.getElementById('cp_name').value = '';
+  document.getElementById('cp_cid').value = '';
+  renderAdminCompetitors();
+  flashMsg('competitorsMsg');
+});
+</script>
+</body>
+</html>

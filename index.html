@@ -225,6 +225,20 @@
     .past-item{ flex-direction:column; align-items:flex-start; }
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA77xaO3Sndi_HgIGoYzTEUf4hVwbYpQkM",
+    authDomain: "cubingarena-cf2d8.firebaseapp.com",
+    projectId: "cubingarena-cf2d8",
+    storageBucket: "cubingarena-cf2d8.firebasestorage.app",
+    messagingSenderId: "604555649505",
+    appId: "1:604555649505:web:37a241456da47d7b5db2a0"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
 </head>
 <body>
 
@@ -412,20 +426,32 @@ let competitors = [];
 
 async function loadData(){
   try{
-    const res = await fetch('data.json', { cache: 'no-store' });
-    if(res.ok){
-      const json = await res.json();
+    const doc = await db.collection('cubingarena').doc('data').get();
+    if(doc.exists){
+      const json = doc.data();
       upcomingComps = json.upcoming || [];
       pastComps = json.past || [];
       competitors = json.competitors || [];
     }
   }catch(e){
-    console.warn('Could not load data.json', e);
+    console.warn('Could not load data from Firebase', e);
   }
   renderUpcoming();
   renderPast();
   renderCompetitors();
 }
+
+/* Keep the site live-updated whenever the admin panel saves changes, without needing a page refresh */
+db.collection('cubingarena').doc('data').onSnapshot(doc => {
+  if(!doc.exists) return;
+  const json = doc.data();
+  upcomingComps = json.upcoming || [];
+  pastComps = json.past || [];
+  competitors = json.competitors || [];
+  renderUpcoming();
+  renderPast();
+  renderCompetitors();
+});
 
 function escapeHtml(s){
   return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
