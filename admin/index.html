@@ -109,7 +109,8 @@
   </div>
 
   <div id="adminPanel" style="display:none;">
-    <div class="note">Changes made here save to this browser's/site's shared data store. If this admin page and the public site aren't sharing a live backend yet, changes here won't appear on the public site until one is connected.</div>
+    <div class="note">Changes made here save to a local draft in this browser. To publish them on the live site, click <b>"Download data.json"</b> below and replace the <code>data.json</code> file in your GitHub repo with the downloaded one, then commit.</div>
+    <button class="btn btn-primary" id="downloadDataBtn" style="margin-bottom:24px;">⬇ Download data.json</button>
     <div class="admin-tabs">
       <button class="admin-tab active" data-tab="upcomingAdmin">Upcoming Comps</button>
       <button class="admin-tab" data-tab="pastAdmin">Past Results</button>
@@ -180,25 +181,7 @@
 const ADMIN_PASSCODE = "2024";
 
 /* ---------- storage helpers ---------- */
-let memoryStore = {};
-async function storageGet(key){
-  try{
-    if(window.storage){
-      const r = await window.storage.get(key, true);
-      return r ? r.value : null;
-    }
-  }catch(e){}
-  return memoryStore[key] || null;
-}
-async function storageSet(key, value){
-  try{
-    if(window.storage){
-      await window.storage.set(key, value, true);
-      return;
-    }
-  }catch(e){}
-  memoryStore[key] = value;
-}
+const DRAFT_KEY = 'cubingarena:admin-draft';
 
 /* ---------- state ---------- */
 let upcomingComps = [];
@@ -211,20 +194,52 @@ function escapeHtml(s){
 }
 function escapeAttr(s){ return escapeHtml(s); }
 
+/* Loads live data.json from the site first (source of truth on the server),
+   falls back to a local draft saved in this browser if data.json can't be reached. */
 async function loadData(){
-  const u = await storageGet('cubingarena:upcoming');
-  const p = await storageGet('cubingarena:past');
-  const c = await storageGet('cubingarena:competitors');
-  upcomingComps = u ? JSON.parse(u) : [];
-  pastComps = p ? JSON.parse(p) : [];
-  competitors = c ? JSON.parse(c) : [];
+  let loaded = null;
+  try{
+    const res = await fetch('../data.json', { cache: 'no-store' });
+    if(res.ok) loaded = await res.json();
+  }catch(e){}
+
+  if(!loaded){
+    try{
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if(raw) loaded = JSON.parse(raw);
+    }catch(e){}
+  }
+
+  upcomingComps = (loaded && loaded.upcoming) || [];
+  pastComps = (loaded && loaded.past) || [];
+  competitors = (loaded && loaded.competitors) || [];
   renderAdminUpcoming();
   renderAdminPast();
   renderAdminCompetitors();
 }
-function saveUpcoming(){ return storageSet('cubingarena:upcoming', JSON.stringify(upcomingComps)); }
-function savePast(){ return storageSet('cubingarena:past', JSON.stringify(pastComps)); }
-function saveCompetitors(){ return storageSet('cubingarena:competitors', JSON.stringify(competitors)); }
+
+/* Saves the current working state as a local draft in this browser only.
+   This does NOT publish to the live site — use "Download data.json" for that. */
+function saveDraft(){
+  const payload = JSON.stringify({ upcoming: upcomingComps, past: pastComps, competitors: competitors });
+  try{ localStorage.setItem(DRAFT_KEY, payload); }catch(e){}
+}
+function saveUpcoming(){ saveDraft(); }
+function savePast(){ saveDraft(); }
+function saveCompetitors(){ saveDraft(); }
+
+document.getElementById('downloadDataBtn').addEventListener('click', () => {
+  const payload = JSON.stringify({ upcoming: upcomingComps, past: pastComps, competitors: competitors }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
 
 function flashMsg(id){
   const el = document.getElementById(id);
