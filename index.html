@@ -45,7 +45,46 @@
   .brand b span{ color:var(--orange); }
   nav.top-nav{ display:flex; gap:26px; font-size:0.92rem; color:var(--text-dim); }
   nav.top-nav a:hover{ color:var(--text); }
-  @media (max-width:720px){ nav.top-nav{ display:none; } }
+  .menu-btn{ display:none; background:none; border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--text); }
+  @media (max-width:720px){
+    nav.top-nav{ display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-soft); border-bottom:1px solid var(--line); flex-direction:column; gap:0; padding:6px 0; }
+    nav.top-nav.open{ display:flex; }
+    nav.top-nav a{ padding:14px 24px; border-top:1px solid var(--line); }
+    nav.top-nav a:first-child{ border-top:none; }
+    .menu-btn{ display:block; }
+    header.top{ position:sticky; flex-wrap:wrap; }
+  }
+
+  .card{ cursor:default; }
+  .card.clickable{ cursor:pointer; }
+
+  .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(5,7,10,0.8); z-index:100; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{ background:var(--surface); border:1px solid var(--line); border-radius:14px; max-width:560px; width:100%; max-height:85vh; overflow-y:auto; padding:26px; position:relative; }
+  .modal-close{ position:absolute; top:16px; right:16px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; width:32px; height:32px; color:var(--text); font-size:1.1rem; }
+  .modal-close:hover{ border-color:var(--orange); }
+  .modal-box h3{ font-size:1.4rem; margin-bottom:4px; padding-right:36px; }
+  .modal-box .meta{ color:var(--text-dim); font-size:0.88rem; margin-bottom:16px; }
+  .modal-box img.poster{ width:100%; border-radius:10px; margin-bottom:16px; aspect-ratio:16/9; object-fit:cover; }
+
+  .search-box{ margin-bottom:20px; }
+  .search-box input{ background:var(--surface); border:1px solid var(--line); color:var(--text); padding:12px 16px; border-radius:8px; width:100%; max-width:360px; font-family:inherit; font-size:0.92rem; }
+  .search-box input:focus{ outline:none; border-color:var(--orange); }
+
+  .contact-section{ text-align:center; padding-top:36px; margin-top:10px; border-top:1px solid var(--line); }
+  .contact-section h3{ font-size:1.2rem; margin-bottom:16px; }
+  .contact-links{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .contact-links a{ display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border:1px solid var(--line); border-radius:8px; font-size:0.88rem; color:var(--text-dim); }
+  .contact-links a:hover{ border-color:var(--orange); color:var(--text); }
+
+  .about .role-row{ display:flex; align-items:center; gap:14px; margin-top:6px; flex-wrap:wrap; }
+  @media (max-width:680px){ .about .role-row{ justify-content:center; } }
+
+  @media (max-width:480px){
+    .hero{ padding:60px 18px 46px; }
+    section{ padding:44px 18px; }
+    .winner-row, .form-grid{ grid-template-columns:1fr !important; }
+  }
 
   .hero{ padding:90px 24px 70px; text-align:center; position:relative; overflow:hidden; }
   .hero::before{ content:''; position:absolute; top:-120px; left:50%; transform:translateX(-50%); width:520px; height:520px; background:radial-gradient(circle, rgba(255,122,26,0.16), transparent 70%); pointer-events:none; }
@@ -110,12 +149,13 @@
     <img src="logo.jpg" alt="Cubing Arena logo">
     <b>CUBING<span> ARENA</span></b>
   </div>
-  <nav class="top-nav">
+  <nav class="top-nav" id="topNav">
     <a href="#upcoming">Upcoming</a>
     <a href="#past">Results</a>
     <a href="#competitors">Competitors</a>
     <a href="#about">About</a>
   </nav>
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">☰</button>
 </header>
 
 <section class="hero">
@@ -153,6 +193,7 @@
       <h2>Competitors</h2>
       <p>Registered cubers with Cubing Arena</p>
     </div>
+    <div class="search-box"><input type="text" id="competitorSearch" placeholder="Search your name..."></div>
     <div id="competitorsList" class="competitor-list"></div>
   </div>
 </section>
@@ -166,12 +207,29 @@
       <img src="organizer.jpg" alt="Cubing Arena organizer">
       <div>
         <h3>Behind Cubing Arena</h3>
-        <p class="role">Delegate &amp; Organizer</p>
+        <div class="role-row">
+          <p class="role" style="margin-top:0;">Delegate &amp; Organizer</p>
+          <a href="https://www.worldcubeassociation.org/persons/2025GIRI02" target="_blank" rel="noopener" class="btn btn-outline" style="padding:8px 16px; font-size:0.82rem;">View WCA profile</a>
+        </div>
         <p>Cubing Arena is run for the speedcubing community — organizing WCA-recognized competitions, keeping results transparent, and giving cubers of every level a place to compete.</p>
       </div>
     </div>
   </div>
 </section>
+
+<div class="container">
+  <div class="contact-section">
+    <h3>Get in touch</h3>
+    <div class="contact-links">
+      <a href="https://wa.me/918392059296" target="_blank" rel="noopener">WhatsApp — 8392059296</a>
+      <a href="mailto:landfun179@gmail.com">landfun179@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-box" id="resultModalBox"></div>
+</div>
 
 <footer>
   <div class="flag-bar" style="margin-bottom:20px; border-radius:4px;"></div>
@@ -181,6 +239,13 @@
 
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  document.getElementById('topNav').classList.toggle('open');
+});
+document.querySelectorAll('#topNav a').forEach(a => a.addEventListener('click', () => {
+  document.getElementById('topNav').classList.remove('open');
+}));
 
 let upcomingComps = [];
 let pastComps = [];
@@ -219,38 +284,65 @@ function renderPast(){
     wrap.innerHTML = '<div class="empty-note">No past results logged yet.</div>';
     return;
   }
-  wrap.innerHTML = pastComps.map(c => `
-    <div class="card">
+  wrap.innerHTML = pastComps.map((c, i) => `
+    <div class="card clickable" data-i="${i}">
       ${c.poster ? `<img class="poster" src="${c.poster}" alt="${escapeHtml(c.name)} poster">` : ''}
       <div class="body">
         <h3>${escapeHtml(c.name)}</h3>
-        <div class="meta">${escapeHtml(c.date)}</div>
-        <div class="past-events">
-          ${(c.events || []).map(ev => `
-            <div class="past-event">
-              <h4>${escapeHtml(ev.name)}</h4>
-              ${(ev.winners || []).map(w => `<div class="winner-line"><span>${escapeHtml(w.place)}. <b>${escapeHtml(w.name)}</b></span><span>${escapeHtml(w.result)}</span></div>`).join('')}
-            </div>
-          `).join('')}
-        </div>
+        <div class="meta">${escapeHtml(c.date)} &middot; ${(c.events||[]).length} event${(c.events||[]).length===1?'':'s'}</div>
+        <div class="tag-row">${(c.events||[]).map(ev => `<span class="tag">${escapeHtml(ev.name)}</span>`).join('')}</div>
+        <button class="btn btn-outline" style="width:100%; justify-content:center; margin-top:6px;">View full results</button>
       </div>
     </div>
   `).join('');
+  wrap.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => openResultModal(pastComps[card.dataset.i]));
+  });
 }
 
+function openResultModal(c){
+  const box = document.getElementById('resultModalBox');
+  box.innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">&times;</button>
+    ${c.poster ? `<img class="poster" src="${c.poster}" alt="${escapeHtml(c.name)} poster">` : ''}
+    <h3>${escapeHtml(c.name)}</h3>
+    <div class="meta">${escapeHtml(c.date)}</div>
+    <div class="past-events">
+      ${(c.events || []).map(ev => `
+        <div class="past-event">
+          <h4>${escapeHtml(ev.name)}</h4>
+          ${(ev.winners || []).map(w => `<div class="winner-line"><span>${escapeHtml(w.place)}. <b>${escapeHtml(w.name)}</b></span><span>${escapeHtml(w.result)}</span></div>`).join('') || '<div class="winner-line"><span>No results logged for this event.</span></div>'}
+        </div>
+      `).join('') || '<p style="color:var(--text-dim); font-size:0.9rem;">No events logged for this competition.</p>'}
+    </div>
+  `;
+  document.getElementById('resultModal').classList.add('open');
+  document.getElementById('modalCloseBtn').addEventListener('click', closeResultModal);
+}
+function closeResultModal(){ document.getElementById('resultModal').classList.remove('open'); }
+document.getElementById('resultModal').addEventListener('click', e => { if(e.target.id === 'resultModal') closeResultModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeResultModal(); });
+
 function renderCompetitors(){
+  const query = (document.getElementById('competitorSearch').value || '').trim().toLowerCase();
   const wrap = document.getElementById('competitorsList');
+  const filtered = query ? competitors.filter(p => (p.name||'').toLowerCase().includes(query) || (p.cid||'').toLowerCase().includes(query)) : competitors;
   if(competitors.length === 0){
     wrap.innerHTML = '<div class="empty-note">No competitors registered yet.</div>';
     return;
   }
-  wrap.innerHTML = competitors.map(p => `
+  if(filtered.length === 0){
+    wrap.innerHTML = '<div class="empty-note">No competitor matches your search.</div>';
+    return;
+  }
+  wrap.innerHTML = filtered.map(p => `
     <div class="competitor-item">
       <div class="competitor-avatar">${escapeHtml(initials(p.name))}</div>
       <div><b>${escapeHtml(p.name)}</b><span>ID: ${escapeHtml(p.cid)}</span></div>
     </div>
   `).join('');
 }
+document.getElementById('competitorSearch').addEventListener('input', renderCompetitors);
 
 function applyData(json){
   upcomingComps = (json && json.upcoming) || [];
