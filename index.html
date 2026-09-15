@@ -363,6 +363,14 @@ function normalizeUrl(u){
   if(!/^https?:\/\//i.test(u)) return 'https://' + u;
   return u;
 }
+function sortByCid(list){
+  return [...list].sort((a, b) => {
+    const an = parseInt((a.cid||'').replace(/\D/g,''), 10) || 0;
+    const bn = parseInt((b.cid||'').replace(/\D/g,''), 10) || 0;
+    if(an !== bn) return an - bn;
+    return (a.cid||'').localeCompare(b.cid||'');
+  });
+}
 
 function renderUpcoming(){
   const wrap = document.getElementById('upcomingGrid');
@@ -377,6 +385,7 @@ function renderUpcoming(){
         <h3>${escapeHtml(c.name)}</h3>
         <div class="meta">${escapeHtml(c.date)}</div>
         ${(c.events && c.events.length) ? `<div class="tag-row">${c.events.map(e => `<span class="tag">${escapeHtml(e)}</span>`).join('')}</div>` : ''}
+        ${c.agecat ? `<div class="meta">Age category: ${escapeHtml(c.agecat)}</div>` : ''}
         ${(c.sponsors && c.sponsors.length) ? `<div class="meta">Sponsored by ${escapeHtml(c.sponsors.join(', '))}</div>` : ''}
         ${c.reg ? `<a href="${escapeHtml(normalizeUrl(c.reg))}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:12px; width:100%; justify-content:center;">Register</a>` : ''}
       </div>
@@ -416,7 +425,7 @@ function openResultModal(c){
     <div class="past-events">
       ${(c.events || []).map(ev => `
         <div class="past-event">
-          <h4>${escapeHtml(ev.name)}</h4>
+          <h4>${escapeHtml(ev.name)}${ev.agecat ? ` <span style="color:var(--text-dim); font-weight:500;">(${escapeHtml(ev.agecat)})</span>` : ''}</h4>
           ${(ev.winners || []).map(w => `<div class="winner-line"><span>${escapeHtml(w.place)}. <b>${escapeHtml(w.name)}</b></span><span>${escapeHtml(w.result)}</span></div>`).join('') || '<div class="winner-line"><span>No results logged for this event.</span></div>'}
         </div>
       `).join('') || '<p style="color:var(--text-dim); font-size:0.9rem;">No events logged for this competition.</p>'}
@@ -432,7 +441,8 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeResultMo
 function renderCompetitors(){
   const query = (document.getElementById('competitorSearch').value || '').trim().toLowerCase();
   const wrap = document.getElementById('competitorsList');
-  const filtered = query ? competitors.filter(p => (p.name||'').toLowerCase().includes(query) || (p.cid||'').toLowerCase().includes(query)) : competitors;
+  const sorted = sortByCid(competitors);
+  const filtered = query ? sorted.filter(p => (p.name||'').toLowerCase().includes(query) || (p.cid||'').toLowerCase().includes(query)) : sorted;
   if(competitors.length === 0){
     wrap.innerHTML = '<div class="empty-note">No competitors registered yet.</div>';
     return;

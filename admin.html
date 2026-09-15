@@ -148,6 +148,7 @@
           <label>Date / dates<input type="text" id="uc_date" placeholder="e.g. 12–13 Oct 2026"></label>
           <label>Registration link<input type="url" id="uc_reg" placeholder="https://..."></label>
           <label class="full">Events (comma separated)<input type="text" id="uc_events" placeholder="3x3, 2x2, Pyraminx, Skewb"></label>
+          <label>Age category (optional)<input type="text" id="uc_agecat" placeholder="e.g. Open / Under 12 / Junior"></label>
           <label class="full">Sponsors (comma separated, optional)<input type="text" id="uc_sponsors" placeholder="Sponsor A, Sponsor B"></label>
           <label class="full">Poster image (upload)
             <input type="file" id="uc_poster_file" accept="image/*">
@@ -291,7 +292,7 @@ function renderAdminUpcoming(){
     <div class="admin-list-item">
       <div class="row-inline">
         ${c.poster ? `<img class="thumb" src="${c.poster}">` : ''}
-        <div class="info"><b>${escapeHtml(c.name)}</b><span>${escapeHtml(c.date)} &middot; ${(c.events||[]).join(', ') || 'no events listed'}</span></div>
+        <div class="info"><b>${escapeHtml(c.name)}</b><span>${escapeHtml(c.date)} &middot; ${(c.events||[]).join(', ') || 'no events listed'}${c.agecat ? ' &middot; ' + escapeHtml(c.agecat) : ''}</span></div>
       </div>
       <div class="row-btns"><button class="btn-sm danger" data-id="${c.id}" data-action="delete-upcoming">Remove</button></div>
     </div>
@@ -312,10 +313,11 @@ document.getElementById('uc_addBtn').addEventListener('click', async () => {
   const date = document.getElementById('uc_date').value.trim() || 'Date to be announced';
   const reg = document.getElementById('uc_reg').value.trim();
   const events = document.getElementById('uc_events').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const agecat = document.getElementById('uc_agecat').value.trim();
   const sponsors = document.getElementById('uc_sponsors').value.split(',').map(s=>s.trim()).filter(Boolean);
-  upcomingComps.unshift({ id: uid(), name, date, reg, events, sponsors, poster: uc_posterData });
+  upcomingComps.unshift({ id: uid(), name, date, reg, events, agecat, sponsors, poster: uc_posterData });
   await saveUpcoming();
-  ['uc_name','uc_date','uc_reg','uc_events','uc_sponsors'].forEach(id => document.getElementById(id).value = '');
+  ['uc_name','uc_date','uc_reg','uc_events','uc_agecat','uc_sponsors'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('uc_poster_file').value = '';
   document.getElementById('uc_poster_preview').style.display = 'none';
   uc_posterData = '';
@@ -349,6 +351,7 @@ function renderPcEventDraft(){
       <h5>${escapeHtml(ev.name) || 'Untitled event'}</h5>
       <div class="event-input-row">
         <input type="text" placeholder="Event name (e.g. 3x3)" value="${escapeAttr(ev.name)}" data-i="${i}" class="pc_ev_name">
+        <input type="text" placeholder="Age category (optional)" value="${escapeAttr(ev.agecat || '')}" data-i="${i}" class="pc_ev_agecat" style="max-width:180px;">
         <button class="btn-sm danger" data-i="${i}" data-action="del-event">Remove event</button>
       </div>
       ${ev.winners.map((w, j) => `
@@ -364,6 +367,7 @@ function renderPcEventDraft(){
   `).join('');
 
   wrap.querySelectorAll('.pc_ev_name').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].name = e.target.value; }));
+  wrap.querySelectorAll('.pc_ev_agecat').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].agecat = e.target.value; }));
   wrap.querySelectorAll('.pc_w_place').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].winners[e.target.dataset.j].place = e.target.value; }));
   wrap.querySelectorAll('.pc_w_name').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].winners[e.target.dataset.j].name = e.target.value; }));
   wrap.querySelectorAll('.pc_w_result').forEach(inp => inp.addEventListener('input', e => { pcEventDraft[e.target.dataset.i].winners[e.target.dataset.j].result = e.target.value; }));
@@ -375,7 +379,7 @@ function renderPcEventDraft(){
   wrap.querySelectorAll('[data-action="del-winner"]').forEach(btn => btn.addEventListener('click', () => { pcEventDraft[btn.dataset.i].winners.splice(btn.dataset.j, 1); renderPcEventDraft(); }));
 }
 document.getElementById('pc_addEventBtn').addEventListener('click', () => {
-  pcEventDraft.push({ name:'', winners:[{place:'1',name:'',result:''}] });
+  pcEventDraft.push({ name:'', agecat:'', winners:[{place:'1',name:'',result:''}] });
   renderPcEventDraft();
 });
 renderPcEventDraft();
@@ -386,7 +390,7 @@ document.getElementById('pc_addBtn').addEventListener('click', async () => {
   const date = document.getElementById('pc_date').value.trim() || 'Date not specified';
   const events = pcEventDraft
     .filter(ev => ev.name.trim())
-    .map(ev => ({ name: ev.name.trim(), winners: ev.winners.filter(w => w.name.trim()).map(w => ({place:w.place||'?', name:w.name.trim(), result:w.result.trim()})) }));
+    .map(ev => ({ name: ev.name.trim(), agecat: (ev.agecat || '').trim(), winners: ev.winners.filter(w => w.name.trim()).map(w => ({place:w.place||'?', name:w.name.trim(), result:w.result.trim()})) }));
   pastComps.unshift({ id: uid(), name, date, events, poster: pc_posterData });
   await savePast();
   document.getElementById('pc_name').value = '';
@@ -426,13 +430,21 @@ function renderAdminPast(){
 }
 
 /* ---------- competitors ---------- */
+function sortByCid(list){
+  return [...list].sort((a, b) => {
+    const an = parseInt((a.cid||'').replace(/\D/g,''), 10) || 0;
+    const bn = parseInt((b.cid||'').replace(/\D/g,''), 10) || 0;
+    if(an !== bn) return an - bn;
+    return (a.cid||'').localeCompare(b.cid||'');
+  });
+}
 function renderAdminCompetitors(){
   const wrap = document.getElementById('cp_list');
   if(competitors.length === 0){
     wrap.innerHTML = '<p style="color:var(--text-dim); font-size:0.9rem;">No competitors added yet.</p>';
     return;
   }
-  wrap.innerHTML = competitors.map(p => `
+  wrap.innerHTML = sortByCid(competitors).map(p => `
     <div class="admin-list-item">
       <div class="info"><b>${escapeHtml(p.name)}</b><span>ID: ${escapeHtml(p.cid)}</span></div>
       <div class="row-btns"><button class="btn-sm danger" data-id="${p.id}" data-action="delete-competitor">Remove</button></div>
@@ -452,7 +464,7 @@ document.getElementById('cp_addBtn').addEventListener('click', async () => {
   const name = document.getElementById('cp_name').value.trim();
   const cid = document.getElementById('cp_cid').value.trim();
   if(!name || !cid){ alert('Please enter both name and competitor ID.'); return; }
-  competitors.unshift({ id: uid(), name, cid });
+  competitors.push({ id: uid(), name, cid });
   await saveCompetitors();
   document.getElementById('cp_name').value = '';
   document.getElementById('cp_cid').value = '';
