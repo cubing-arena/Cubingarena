@@ -86,6 +86,20 @@
     .winner-row, .form-grid{ grid-template-columns:1fr !important; }
   }
 
+  .rules-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:720px){ .rules-grid{ grid-template-columns:1fr; } }
+  .rule-card{ background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--orange); border-radius:10px; padding:22px 24px; }
+  .rule-card.alt{ border-left-color:var(--blue); }
+  .rule-card h4{ font-size:1.05rem; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .rule-card ul{ list-style:none; }
+  .rule-card li{ color:var(--text-dim); font-size:0.9rem; padding:5px 0; padding-left:16px; position:relative; }
+  .rule-card li::before{ content:'•'; position:absolute; left:0; color:var(--orange); }
+  .rule-card.alt li::before{ color:var(--blue); }
+  .rule-card ol{ color:var(--text-dim); font-size:0.9rem; padding-left:20px; }
+  .rule-card ol li{ padding:5px 0; padding-left:4px; }
+  .rule-card ol li::before{ content:none; }
+  .rules-cta{ text-align:center; margin-top:28px; }
+
   .hero{ padding:90px 24px 70px; text-align:center; position:relative; overflow:hidden; }
   .hero::before{ content:''; position:absolute; top:-120px; left:50%; transform:translateX(-50%); width:520px; height:520px; background:radial-gradient(circle, rgba(255,122,26,0.16), transparent 70%); pointer-events:none; }
   .hero h1{ font-size:clamp(2.4rem, 6vw, 4rem); line-height:1.05; margin-bottom:18px; position:relative; }
@@ -152,6 +166,7 @@
   <nav class="top-nav" id="topNav">
     <a href="#upcoming">Upcoming</a>
     <a href="#past">Results</a>
+    <a href="#rules">Rules</a>
     <a href="#competitors">Competitors</a>
     <a href="#about">About</a>
   </nav>
@@ -195,6 +210,72 @@
     </div>
     <div class="search-box"><input type="text" id="competitorSearch" placeholder="Search your name..."></div>
     <div id="competitorsList" class="competitor-list"></div>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="container">
+    <div class="section-head">
+      <h2>Rules & Regulations</h2>
+      <p>Please read all the rules carefully before your scheduled event</p>
+    </div>
+    <div class="rules-grid">
+      <div class="rule-card">
+        <h4>📷 Camera Setup</h4>
+        <ul>
+          <li>The camera must remain stable throughout the entire solve.</li>
+          <li>The following must be clearly visible at all times: cube, cube cover, timer, and both hands.</li>
+          <li>The entire solving area should remain inside the camera frame.</li>
+          <li>The cube must never go outside the camera frame during the attempt.</li>
+        </ul>
+      </div>
+      <div class="rule-card alt">
+        <h4>📝 Before the Solve</h4>
+        <ol>
+          <li>Apply the scramble exactly as provided.</li>
+          <li>Scrambles will be sent one by one in the Google Meet in-call chat.</li>
+          <li>Only solve the scramble that is currently provided.</li>
+          <li>After scrambling, show any one side of the scrambled cube clearly to the camera.</li>
+          <li>Wait for the organizer's instruction to cover the cube.</li>
+          <li>When instructed, place the cube under the cube cover.</li>
+        </ol>
+      </div>
+      <div class="rule-card">
+        <h4>▶️ Starting the Attempt</h4>
+        <ul>
+          <li>The organizer will count "1...2...3...Start".</li>
+          <li>After "Start", the official 15-second inspection begins.</li>
+          <li>Complete your solve following all applicable WCA regulations.</li>
+          <li>After finishing, show the timer clearly to the camera so your result is visible.</li>
+        </ul>
+      </div>
+      <div class="rule-card alt">
+        <h4>⚖️ WCA Regulations</h4>
+        <ul>
+          <li>All official WCA Regulations are applicable throughout the competition.</li>
+          <li>Penalties, +2, DNF, DNS, and all other decisions will be made according to the WCA Regulations.</li>
+        </ul>
+      </div>
+      <div class="rule-card">
+        <h4>❌ Attendance & Conduct</h4>
+        <ul>
+          <li>Participants must join the Google Meet at their allotted time.</li>
+          <li>If a participant does not join at the scheduled time, they will be disqualified (DQ) and all solves will be recorded as DNS.</li>
+          <li>Do not receive any outside assistance during your attempts.</li>
+          <li>Any form of cheating, unfair practice, or violation of the rules may result in immediate disqualification.</li>
+        </ul>
+      </div>
+      <div class="rule-card alt">
+        <h4>💰 Registration & Refunds</h4>
+        <ul>
+          <li>The registration fee is non-refundable once a participant has completed registration.</li>
+          <li>If a participant is unable to attend the competition for any reason, the registration fee will not be refunded.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="rules-cta">
+      <a href="https://www.worldcubeassociation.org/regulations/" target="_blank" rel="noopener" class="btn btn-primary">See Official WCA Rules & Regulations</a>
+    </div>
   </div>
 </section>
 
@@ -257,6 +338,12 @@ function escapeHtml(s){
 function initials(name){
   return String(name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0] || '').join('').toUpperCase();
 }
+function normalizeUrl(u){
+  u = String(u || '').trim();
+  if(!u) return '';
+  if(!/^https?:\/\//i.test(u)) return 'https://' + u;
+  return u;
+}
 
 function renderUpcoming(){
   const wrap = document.getElementById('upcomingGrid');
@@ -272,7 +359,7 @@ function renderUpcoming(){
         <div class="meta">${escapeHtml(c.date)}</div>
         ${(c.events && c.events.length) ? `<div class="tag-row">${c.events.map(e => `<span class="tag">${escapeHtml(e)}</span>`).join('')}</div>` : ''}
         ${(c.sponsors && c.sponsors.length) ? `<div class="meta">Sponsored by ${escapeHtml(c.sponsors.join(', '))}</div>` : ''}
-        ${c.reg ? `<a href="${escapeHtml(c.reg)}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:12px; width:100%; justify-content:center;">Register</a>` : ''}
+        ${c.reg ? `<a href="${escapeHtml(normalizeUrl(c.reg))}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:12px; width:100%; justify-content:center;">Register</a>` : ''}
       </div>
     </div>
   `).join('');
