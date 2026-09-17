@@ -302,7 +302,7 @@
         <div class="role-row">
           <p class="role" style="margin-top:0;">Delegate &amp; Organizer</p>
           <a href="https://www.worldcubeassociation.org/persons/2025GIRI02" target="_blank" rel="noopener" class="btn btn-outline" style="padding:8px 16px; font-size:0.82rem;">View WCA profile</a>
-          <a href="http://www.youtube.com/@SuperSankhaStar" target="_blank" rel="noopener" class="btn btn-outline" style="padding:8px 16px; font-size:0.82rem;">Youtube</a>
+          <a href="https://www.instagram.com/super_sankha_star?stkn=MTJ1NDdwNjBzOHN2aA==" target="_blank" rel="noopener" class="btn btn-outline" style="padding:8px 16px; font-size:0.82rem;">Instagram</a>
         </div>
         <p>Cubing Arena is run for the speedcubing community — organizing WCA-recognized competitions, keeping results transparent, and giving cubers of every level a place to compete.</p>
       </div>
@@ -350,6 +350,8 @@ document.querySelectorAll('#topNav a').forEach(a => a.addEventListener('click', 
 let upcomingComps = [];
 let pastComps = [];
 let competitors = [];
+let competitorsExpanded = false;
+const COMPETITORS_PAGE_SIZE = 5;
 
 function escapeHtml(s){
   return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -451,14 +453,33 @@ function renderCompetitors(){
     wrap.innerHTML = '<div class="empty-note">No competitor matches your search.</div>';
     return;
   }
-  wrap.innerHTML = filtered.map(p => `
+  // While searching, show every match. Otherwise cap the list and offer "Show more".
+  const shouldLimit = !query && !competitorsExpanded && filtered.length > COMPETITORS_PAGE_SIZE;
+  const visible = shouldLimit ? filtered.slice(0, COMPETITORS_PAGE_SIZE) : filtered;
+
+  const existingShowMore = document.getElementById('competitorsShowMoreWrap');
+  if(existingShowMore) existingShowMore.remove();
+
+  wrap.innerHTML = visible.map(p => `
     <div class="competitor-item">
       <div class="competitor-avatar">${escapeHtml(initials(p.name))}</div>
       <div><b>${escapeHtml(p.name)}</b><span>ID: ${escapeHtml(p.cid)}</span></div>
     </div>
   `).join('');
+
+  if(shouldLimit){
+    const remaining = filtered.length - visible.length;
+    wrap.insertAdjacentHTML('afterend', `<div id="competitorsShowMoreWrap" style="text-align:center; margin-top:16px;"><button id="competitorsShowMoreBtn" class="btn btn-outline">Show more (${remaining})</button></div>`);
+    document.getElementById('competitorsShowMoreBtn').addEventListener('click', () => {
+      competitorsExpanded = true;
+      renderCompetitors();
+    });
+  }
 }
-document.getElementById('competitorSearch').addEventListener('input', renderCompetitors);
+document.getElementById('competitorSearch').addEventListener('input', () => {
+  competitorsExpanded = false;
+  renderCompetitors();
+});
 
 function applyData(json){
   upcomingComps = (json && json.upcoming) || [];
