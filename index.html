@@ -481,9 +481,19 @@ document.getElementById('competitorSearch').addEventListener('input', () => {
   renderCompetitors();
 });
 
+function deserializePast(list){
+  return (list || []).map(c => {
+    let events = c.events;
+    if(typeof events === 'string'){
+      try{ events = JSON.parse(events || '[]'); } catch(e){ events = []; }
+    }
+    return { ...c, events: events || [] };
+  });
+}
+
 function applyData(json){
   upcomingComps = (json && json.upcoming) || [];
-  pastComps = (json && json.past) || [];
+  pastComps = deserializePast((json && json.past) || []);
   competitors = (json && json.competitors) || [];
   renderUpcoming();
   renderPast();

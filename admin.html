@@ -216,13 +216,29 @@ function escapeAttr(s){ return escapeHtml(s); }
 
 const dataDocRef = db.collection('cubingarena').doc('data');
 
+/* Firestore rejects an array whose entries have their own array property (e.g. past -> {events:[...]}).
+   So on the way out we flatten each competition's events+winners into one JSON string,
+   and on the way in we parse it back into a normal array for the rest of the code to use. */
+function serializePast(list){
+  return (list || []).map(c => ({ ...c, events: JSON.stringify(c.events || []) }));
+}
+function deserializePast(list){
+  return (list || []).map(c => {
+    let events = c.events;
+    if(typeof events === 'string'){
+      try{ events = JSON.parse(events || '[]'); } catch(e){ events = []; }
+    }
+    return { ...c, events: events || [] };
+  });
+}
+
 async function loadData(){
   try{
     const doc = await dataDocRef.get();
     if(doc.exists){
       const json = doc.data();
       upcomingComps = json.upcoming || [];
-      pastComps = json.past || [];
+      pastComps = deserializePast(json.past || []);
       competitors = json.competitors || [];
     }
   }catch(e){
@@ -239,7 +255,7 @@ async function saveUpcoming(){
   catch(e){ console.error('saveUpcoming failed', e); alert('Save failed: ' + e.message); throw e; }
 }
 async function savePast(){
-  try{ await dataDocRef.set({ past: pastComps }, { merge: true }); }
+  try{ await dataDocRef.set({ past: serializePast(pastComps) }, { merge: true }); }
   catch(e){ console.error('savePast failed', e); alert('Save failed: ' + e.message); throw e; }
 }
 async function saveCompetitors(){
