@@ -234,9 +234,18 @@ async function loadData(){
 }
 
 /* Saves straight to Firestore, live — the public site updates automatically. */
-async function saveUpcoming(){ await dataDocRef.set({ upcoming: upcomingComps }, { merge: true }); }
-async function savePast(){ await dataDocRef.set({ past: pastComps }, { merge: true }); }
-async function saveCompetitors(){ await dataDocRef.set({ competitors: competitors }, { merge: true }); }
+async function saveUpcoming(){
+  try{ await dataDocRef.set({ upcoming: upcomingComps }, { merge: true }); }
+  catch(e){ console.error('saveUpcoming failed', e); alert('Save failed: ' + e.message); throw e; }
+}
+async function savePast(){
+  try{ await dataDocRef.set({ past: pastComps }, { merge: true }); }
+  catch(e){ console.error('savePast failed', e); alert('Save failed: ' + e.message); throw e; }
+}
+async function saveCompetitors(){
+  try{ await dataDocRef.set({ competitors: competitors }, { merge: true }); }
+  catch(e){ console.error('saveCompetitors failed', e); alert('Save failed: ' + e.message); throw e; }
+}
 
 function flashMsg(id){
   const el = document.getElementById(id);
