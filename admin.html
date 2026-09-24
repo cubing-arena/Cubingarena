@@ -180,6 +180,10 @@
         </div>
         <div style="margin-top:18px;"><button class="btn btn-primary" id="pc_addBtn">Add past competition</button></div>
       </div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="btn-sm" id="compressBtn">Compress existing posters</button>
+        <span id="sizeInfo" style="color:var(--text-dim); font-size:0.82rem;"></span>
+      </div>
       <h4 style="margin-bottom:14px; color:var(--text-dim); font-weight:600; font-size:0.9rem;">Existing past competitions</h4>
       <div id="pc_list"></div>
     </div>
@@ -232,6 +236,50 @@ function deserializePast(list){
   });
 }
 
+/* ---------- image compression + size guard ----------
+   Firestore documents are capped at 1 MiB (1,048,576 bytes) and ALL data (upcoming, past, competitors,
+   posters as base64) lives in ONE document. So posters are shrunk to a small JPEG before being stored. */
+const FIRESTORE_LIMIT = 1000000; // stay a little under the real 1,048,576 limit
+function compressDataURL(src, maxDim, quality){
+  maxDim = maxDim || 700; quality = quality || 0.65;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error('Could not read that image.'));
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = src;
+  });
+}
+function compressFile(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that file.'));
+    reader.onload = () => compressDataURL(reader.result, maxDim, quality).then(resolve, reject);
+    reader.readAsDataURL(file);
+  });
+}
+function currentDocSize(){
+  return new Blob([JSON.stringify({ upcoming: upcomingComps, past: serializePast(pastComps), competitors })]).size;
+}
+function checkSize(){
+  const size = currentDocSize();
+  if(size > FIRESTORE_LIMIT){
+    const kb = Math.round(size / 1024);
+    const msg = 'Too much data to save (' + kb + ' KB, limit is about 1000 KB). Use a smaller poster, remove an old poster, or press "Compress existing posters" in the Past tab.';
+    alert(msg);
+    throw new Error(msg);
+  }
+}
+
 async function loadData(){
   try{
     const doc = await dataDocRef.get();
@@ -251,14 +299,17 @@ async function loadData(){
 
 /* Saves straight to Firestore, live — the public site updates automatically. */
 async function saveUpcoming(){
+  checkSize();
   try{ await dataDocRef.set({ upcoming: upcomingComps }, { merge: true }); }
   catch(e){ console.error('saveUpcoming failed', e); alert('Save failed: ' + e.message); throw e; }
 }
 async function savePast(){
+  checkSize();
   try{ await dataDocRef.set({ past: serializePast(pastComps) }, { merge: true }); }
   catch(e){ console.error('savePast failed', e); alert('Save failed: ' + e.message); throw e; }
 }
 async function saveCompetitors(){
+  checkSize();
   try{ await dataDocRef.set({ competitors: competitors }, { merge: true }); }
   catch(e){ console.error('saveCompetitors failed', e); alert('Save failed: ' + e.message); throw e; }
 }
@@ -295,16 +346,14 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
 
 /* ---------- upcoming ---------- */
 let uc_posterData = '';
-document.getElementById('uc_poster_file').addEventListener('change', function(e){
+document.getElementById('uc_poster_file').addEventListener('change', async function(e){
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    uc_posterData = ev.target.result;
+  try{
+    uc_posterData = await compressFile(file, 700, 0.65);
     const prev = document.getElementById('uc_poster_preview');
     prev.src = uc_posterData; prev.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  }catch(err){ alert(err.message); e.target.value = ''; uc_posterData = ''; }
 });
 
 function renderAdminUpcoming(){
@@ -340,8 +389,9 @@ document.getElementById('uc_addBtn').addEventListener('click', async () => {
   const events = document.getElementById('uc_events').value.split(',').map(s=>s.trim()).filter(Boolean);
   const agecat = document.getElementById('uc_agecat').value.trim();
   const sponsors = document.getElementById('uc_sponsors').value.split(',').map(s=>s.trim()).filter(Boolean);
-  upcomingComps.unshift({ id: uid(), name, date, reg, events, agecat, sponsors, poster: uc_posterData });
-  await saveUpcoming();
+  const newUc = { id: uid(), name, date, reg, events, agecat, sponsors, poster: uc_posterData };
+  upcomingComps.unshift(newUc);
+  try{ await saveUpcoming(); }catch(err){ upcomingComps = upcomingComps.filter(x => x !== newUc); return; }
   ['uc_name','uc_date','uc_reg','uc_events','uc_agecat','uc_sponsors'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('uc_poster_file').value = '';
   document.getElementById('uc_poster_preview').style.display = 'none';
@@ -352,16 +402,14 @@ document.getElementById('uc_addBtn').addEventListener('click', async () => {
 
 /* ---------- past ---------- */
 let pc_posterData = '';
-document.getElementById('pc_poster_file').addEventListener('change', function(e){
+document.getElementById('pc_poster_file').addEventListener('change', async function(e){
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    pc_posterData = ev.target.result;
+  try{
+    pc_posterData = await compressFile(file, 700, 0.65);
     const prev = document.getElementById('pc_poster_preview');
     prev.src = pc_posterData; prev.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  }catch(err){ alert(err.message); e.target.value = ''; pc_posterData = ''; }
 });
 
 let pcEventDraft = [];
@@ -416,8 +464,9 @@ document.getElementById('pc_addBtn').addEventListener('click', async () => {
   const events = pcEventDraft
     .filter(ev => ev.name.trim())
     .map(ev => ({ name: ev.name.trim(), agecat: (ev.agecat || '').trim(), winners: ev.winners.filter(w => w.name.trim()).map(w => ({place:w.place||'?', name:w.name.trim(), result:w.result.trim()})) }));
-  pastComps.unshift({ id: uid(), name, date, events, poster: pc_posterData });
-  await savePast();
+  const newPc = { id: uid(), name, date, events, poster: pc_posterData };
+  pastComps.unshift(newPc);
+  try{ await savePast(); }catch(err){ pastComps = pastComps.filter(x => x !== newPc); return; }
   document.getElementById('pc_name').value = '';
   document.getElementById('pc_date').value = '';
   document.getElementById('pc_poster_file').value = '';
@@ -430,6 +479,7 @@ document.getElementById('pc_addBtn').addEventListener('click', async () => {
 });
 
 function renderAdminPast(){
+  updateSizeInfo();
   const wrap = document.getElementById('pc_list');
   if(pastComps.length === 0){
     wrap.innerHTML = '<p style="color:var(--text-dim); font-size:0.9rem;">No past competitions added yet.</p>';
@@ -489,12 +539,32 @@ document.getElementById('cp_addBtn').addEventListener('click', async () => {
   const name = document.getElementById('cp_name').value.trim();
   const cid = document.getElementById('cp_cid').value.trim();
   if(!name || !cid){ alert('Please enter both name and competitor ID.'); return; }
-  competitors.push({ id: uid(), name, cid });
-  await saveCompetitors();
+  const newCp = { id: uid(), name, cid };
+  competitors.push(newCp);
+  try{ await saveCompetitors(); }catch(err){ competitors = competitors.filter(x => x !== newCp); return; }
   document.getElementById('cp_name').value = '';
   document.getElementById('cp_cid').value = '';
   renderAdminCompetitors();
   flashMsg('competitorsMsg');
+});
+
+/* ---------- compress posters already stored (one-time cleanup, safe to press again) ---------- */
+function updateSizeInfo(){
+  const el = document.getElementById('sizeInfo');
+  if(el) el.textContent = 'Data used: ' + Math.round(currentDocSize()/1024) + ' KB of ~1000 KB';
+}
+document.getElementById('compressBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('compressBtn');
+  btn.disabled = true; btn.textContent = 'Compressing...';
+  try{
+    for(const c of upcomingComps){ if(c.poster) c.poster = await compressDataURL(c.poster, 700, 0.65); }
+    for(const c of pastComps){ if(c.poster) c.poster = await compressDataURL(c.poster, 700, 0.65); }
+    await dataDocRef.set({ upcoming: upcomingComps, past: serializePast(pastComps) }, { merge: true });
+    renderAdminUpcoming(); renderAdminPast();
+    flashMsg('pastMsg');
+  }catch(e){ alert('Compress failed: ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Compress existing posters';
+  updateSizeInfo();
 });
 </script>
 </body>
